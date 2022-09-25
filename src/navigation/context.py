@@ -54,6 +54,7 @@ class Environment:
         """
         Retrieves the position of the current fiducial
         """
+        assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
             return None
@@ -107,7 +108,7 @@ class Context:
     course_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
-    course: Course
+    course: Optional[Course]
     rover: Rover
     env: Environment
 
@@ -115,7 +116,7 @@ class Context:
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
-        self.vis_publisher = rospy.Publisher("nav_vis", Marker)
+        self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.course_service = rospy.Service("course_service", mrover.srv.PublishCourse, self.recv_course)
         self.course = None
         self.rover = Rover(self)

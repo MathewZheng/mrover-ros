@@ -141,10 +141,17 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS}
 )
 
-file(GLOB_RECURSE PERCEPTION_SOURCES "src/perception/*.cpp")
+# TODO: move into its own folder
+file(GLOB_RECURSE PERCEPTION_SOURCES "src/perception/aruco/*.cpp")
 add_executable(aruco_detect ${PERCEPTION_SOURCES})
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
+# find files
+file(GLOB_RECURSE COST_MAPPING_SOURCES "src/perception/cost_mapping/*.cpp")
+add_executable(cost_map ${COST_MAPPING_SOURCES})
+# add deps
+# link
 
 add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

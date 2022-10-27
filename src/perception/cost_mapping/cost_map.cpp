@@ -1,12 +1,5 @@
 #include "cost_map.hpp"
 
-
-// calculation should be here
-void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
-
-}
-
-
 CostMapNode::CostMapNode() : mNh(), mPnh("~"), mTfListener(mTfBuffer) {
     mPnh.param<bool>("publish_cost_maps", mPublishCostMaps, true);
     mPnh.param<bool>("verbose", mIsVerbose, false);

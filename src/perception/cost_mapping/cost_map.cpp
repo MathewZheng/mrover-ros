@@ -4,7 +4,7 @@ CostMapNode::CostMapNode() : mNh(), mPnh("~"), mTfListener(mTfBuffer) {
     mPnh.param<bool>("publish_cost_maps", mPublishCostMaps, true);
     mPnh.param<bool>("verbose", mIsVerbose, false);
 
-    // TODO: need to advertise cost maps
+    mCostMapPub = mCMt.advertise<nav_msgs::OccupancyGrid>("cost_maps", 1);
 
     mPcSub = mNh.subscribe("camera/depth/points", 1, &CostMapNode::pointCloudCallback, this);
 

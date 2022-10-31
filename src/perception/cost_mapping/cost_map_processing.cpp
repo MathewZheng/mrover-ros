@@ -15,15 +15,17 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
     // 1. Get the transformation from the previous rover pose to the current pose
 
-    // 2. Use that transform to update all points in mCostMapPoints, the "point" vector
+    // 2. Remove all points that are now too far away
 
-    // 3. Iterate mCloudPtr and add all new cost map calculations to mCostMapPoints
+    // 3. Use that transform to update all points in mCostMapPoints, the "point" vector
 
-    // 4. For each point in mCostMapPoints, add to its correct "bin" or cell
+    // 4. Iterate mCloudPtr and add all new cost map calculations to mCostMapPoints
 
-    // 5. There is a chance there will be multiple, keep ony the one with the newest "frameNumberSeen"
+    // 5. For each point in mCostMapPoints, add to its correct "bin" or cell
 
-    // 6. Actually create the cost map and put it into mLocalGrid, publish it
+    // 6. There is a chance there will be multiple, keep ony the one with the newest "frameNumberSeen"
+
+    // 7. Actually create the cost map and put it into mLocalGrid, publish it
 
     if (mPublishCostMaps) {
         mCostMapPub.publish(mLocalGrid);

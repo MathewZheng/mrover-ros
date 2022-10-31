@@ -11,7 +11,7 @@ CostMapNode::CostMapNode() : mNh(), mPnh("~"), mTfListener(mTfBuffer) {
     ROS_INFO("Cost map ready");
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     ros::init(argc, argv, "cost_map");
 
     [[maybe_unused]] auto node = std::make_unique<CostMapNode>();

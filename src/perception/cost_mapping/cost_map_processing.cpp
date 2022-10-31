@@ -6,21 +6,32 @@
  *  Cost is calculated as:
  *  c(x,y) = 1 - abs(dot(unit(normal(x,y)), <0, 0, 1>))
  * 
-*/ 
-void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+*/
+void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg) {
     //TODO complete calculation
     // idea, create channel iters, xyz (rgb unused), nx, ny, nz
     // iterate w these, publish into nx, ny, nz
-
     uint32_t mHeight = 64, mWidth = 64;
 
-    std_msgs::Header();
-    nav_msgs::MapMetaData();
+    // 1. Get the transformation from the previous rover pose to the current pose
 
-    msg = nav_msgs::OccupancyGrid(std_msgs::Header();
+    // 2. Use that transform to update all points in mCostMapPoints, the "point" vector
 
-    if(mPublishCostMaps){
-        mCostMapPub.publish(msg);
+    // 3. Iterate mCloudPtr and add all new cost map calculations to mCostMapPoints
+
+    // 4. For each point in mCostMapPoints, add to its correct "bin" or cell
+
+    // 5. There is a chance there will be multiple, keep ony the one with the newest "frameNumberSeen"
+
+    // 6. Actually create the cost map and put it into mLocalGrid, publish it
+
+    if (mPublishCostMaps) {
+        mCostMapPub.publish(mLocalGrid);
     }
 
+    pcl::fromROSMsg(*msg, *mCloudPtr);
+    for (pcl::PointXYZRGBNormal &point: *mCloudPtr) {
+        float x = point.x;
+        float y = point.y;
+    }
 }

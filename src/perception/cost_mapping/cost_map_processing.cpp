@@ -1,5 +1,7 @@
 #include "cost_map.hpp"
 
+#include <limits>
+
 /*  Calculate the normal of each point xyz, store it in the last three channels, with message diagram:
  *  x (f32), y (f32), z (f32), rgba (uint32), normal_x (f32), normal_y (f32), normal_z (f32)
  *  
@@ -33,7 +35,12 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
     pcl::fromROSMsg(*msg, *mCloudPtr);
     for (pcl::PointXYZRGBNormal &point: *mCloudPtr) {
-        float x = point.x;
-        float y = point.y;
+        Eigen::Vector3f normal{point.normal_x, point.normal_y, 0.0f};
+        Eigen::Vector3f up{0.0f, 0.0f, 1.0f};
+        float cost = 1.0f - std::fabs(normal.dot(up));
+        auto intCost = static_cast<uint8_t>(std::lround(cost) * std::numeric_limits<uint8_t>::max());
+        mCostMapPoints.emplace_back(Eigen::Vector2f{point.x, point.y}, intCost, mFrameNumber);
     }
+
+    mFrameNumber++;
 }

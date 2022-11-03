@@ -17,7 +17,7 @@ using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
 using PointCloudPtr = std::shared_ptr<PointCloud>;
 
 struct CostMapPoint {
-    Eigen::Vector2d point{};
+    Eigen::Vector2f point{};
     uint8_t cost{};
     size_t frameNumberSeen{};
 };

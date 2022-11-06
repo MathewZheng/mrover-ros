@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include "../se3.hpp"
 
 #include <limits>
 
@@ -29,10 +30,12 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
     // 7. Actually create the cost map and put it into mLocalGrid, publish it
 
-    if (mPublishCostMaps) {
-        mCostMapPub.publish(mLocalGrid);
-    }
+    geometry_msgs::TransformStamped pcTf = mTfBuffer.lookupTransform("map", "base_link", ros::Time(0));
+    SE3 SE3Tf = SE3::fromTf(pcTf.transform);
+    // TODO: Calculate transform using SE3
 
+    float minx = mCloudPtr->at(0).x;
+    float miny = mCloudPtr->at(0).y;
     pcl::fromROSMsg(*msg, *mCloudPtr);
     for (pcl::PointXYZRGBNormal &point: *mCloudPtr) {
         Eigen::Vector3f normal{point.normal_x, point.normal_y, 0.0f};
@@ -40,6 +43,26 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
         float cost = 1.0f - std::fabs(normal.dot(up));
         auto intCost = static_cast<uint8_t>(std::lround(cost) * std::numeric_limits<uint8_t>::max());
         mCostMapPoints.emplace_back(Eigen::Vector2f{point.x, point.y}, intCost, mFrameNumber);
+        if (point.x < minx) {
+            minx = point.x;
+        }
+        if (point.y < miny) {
+            miny = point.y;
+        }
+    }
+
+    // TODO: Change this to use resolution to calculate indices
+    for (int i = 0; i < (int)mCostMapPoints.size(); ++i) {
+        float pointx = mCostMapPoints[i].point.x();
+        float pointy = mCostMapPoints[i].point.y();
+        float differencex = pointx - minx;
+        float differencey = pointy - miny;
+        int indexx = floor(differencex);
+        int indexy = floor(differencey);
+    }
+
+    if (mPublishCostMaps) {
+        mCostMapPub.publish(mLocalGrid);
     }
 
     mFrameNumber++;

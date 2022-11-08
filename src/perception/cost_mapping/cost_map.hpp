@@ -41,6 +41,7 @@ private:
     bool mIsVerbose = false;
 
     void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg);
+    std::pair<int, int> convertToCell(float pointx, float pointy);
 
     nav_msgs::OccupancyGrid mLocalGrid;
     PointCloudPtr mCloudPtr = std::make_shared<PointCloud>();

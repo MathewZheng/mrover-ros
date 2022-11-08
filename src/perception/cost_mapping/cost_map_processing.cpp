@@ -31,6 +31,7 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     // 7. Actually create the cost map and put it into mLocalGrid, publish it
 
     geometry_msgs::TransformStamped pcTf = mTfBuffer.lookupTransform("map", "base_link", ros::Time(0));
+    // fromTf is still erroring (something about it being inaccessible)
     SE3 SE3Tf = SE3::fromTf(pcTf.transform);
     // TODO: Calculate transform using SE3
 
@@ -42,6 +43,15 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
         Eigen::Vector3f up{0.0f, 0.0f, 1.0f};
         float cost = 1.0f - std::fabs(normal.dot(up));
         auto intCost = static_cast<uint8_t>(std::lround(cost) * std::numeric_limits<uint8_t>::max());
+        // check here maybe to see if it exists already in costMap
+        std::pair<int, int> currentPoint = convertToCell(point.x, point.y);
+        for (int i = 0; i < (int)mCostMapPoints.size(); ++i) {
+            std::pair<int, int> costMapPoint = convertToCell(mCostMapPoints[i].point.x(), mCostMapPoints[i].point.y());
+            if (currentPoint == costMapPoint) {
+                mCostMapPoints.erase(mCostMapPoints.begin() + i);
+                break;
+            }
+        }
         mCostMapPoints.emplace_back(Eigen::Vector2f{point.x, point.y}, intCost, mFrameNumber);
         if (point.x < minx) {
             minx = point.x;
@@ -51,14 +61,10 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
         }
     }
 
-    // TODO: Change this to use resolution to calculate indices
+    // Should be done now: Change this to use resolution to calculate indices
+    // Idea: for checking duplicates potentially keep track with a set?
     for (int i = 0; i < (int)mCostMapPoints.size(); ++i) {
-        float pointx = mCostMapPoints[i].point.x();
-        float pointy = mCostMapPoints[i].point.y();
-        float differencex = pointx - minx;
-        float differencey = pointy - miny;
-        int indexx = floor(differencex);
-        int indexy = floor(differencey);
+        std::pair<int, int> currentPoint = convertToCell(mCostMapPoints[i].point.x(), mCostMapPoints[i].point.y());
     }
 
     if (mPublishCostMaps) {
@@ -66,4 +72,19 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     }
 
     mFrameNumber++;
+}
+
+std::pair<int, int> CostMapNode::convertToCell(float pointx, float pointy) {
+    // HERE: code for the previous way we calculated the indices
+    // float differencex = pointx - minx;
+    // float differencey = pointy - miny;
+    // int indexx = floor(differencex);
+    // int indexy = floor(differencey); 
+
+    float resolution = mLocalGrid.info.resolution;
+    // not sure if the width and height we are concerned with is the one in the mapmetadata for the occupancy grid or
+    // the width and height specified above. for now i'm gonna assume its just the occupancy grid one
+    uint32_t gridWidth = mLocalGrid.info.width;
+    uint32_t gridHeight = mLocalGrid.info.height;
+    return std::pair<int, int>(floor(pointx / resolution) + (gridWidth / 2), floor(pointy / resolution) + (gridHeight / 2));          
 }

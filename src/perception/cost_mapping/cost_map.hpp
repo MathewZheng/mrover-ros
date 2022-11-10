@@ -19,8 +19,9 @@ using PointCloudPtr = std::shared_ptr<PointCloud>;
 struct CostMapPoint {
     Eigen::Vector2f point{};
     uint8_t cost{};
-    size_t frameNumberSeen{};
 };
+
+using CostMapGrid = std::vector<std::vector<std::optional<CostMapPoint>>>;
 
 class CostMapNode {
 private:
@@ -34,14 +35,16 @@ private:
     tf2_ros::Buffer mTfBuffer;
     tf2_ros::TransformListener mTfListener;
 
-    std::vector<CostMapPoint> mCostMapPoints;
+    CostMapGrid mCostMapPoints;
+    CostMapGrid mCostMapPointsScratch;
     size_t mFrameNumber = 0;
 
     bool mPublishCostMaps = false;
     bool mIsVerbose = false;
 
     void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg);
-    std::pair<int, int> convertToCell(float pointx, float pointy);
+
+    std::pair<size_t, size_t> convertToCell(Eigen::Vector2f const &point);
 
     nav_msgs::OccupancyGrid mLocalGrid;
     PointCloudPtr mCloudPtr = std::make_shared<PointCloud>();

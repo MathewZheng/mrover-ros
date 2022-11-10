@@ -22,9 +22,9 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
     // 3. Use that transform to update all points in mCostMapPoints, the "point" vector
 
-    // 4. Iterate mCloudPtr and add all new cost map calculations to mCostMapPoints
+    // 4. Iterate mCloudPtr and add all new cost map calculations to mCostMapPoints DONE
 
-    // 5. For each point in mCostMapPoints, add to its correct "bin" or cell
+    // 5. For each point in mCostMapPoints, add to its correct "bin" or cell DONE
 
     // 6. There is a chance there will be multiple, keep ony the one with the newest "frameNumberSeen"
 
@@ -33,19 +33,23 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     geometry_msgs::TransformStamped pcTf = mTfBuffer.lookupTransform("map", "base_link", ros::Time(0));
     // fromTf is still erroring (something about it being inaccessible)
     SE3 SE3Tf = SE3::fromTf(pcTf.transform);
+    SE3 delta;
     // TODO: Calculate transform using SE3
 
     float minx = mCloudPtr->at(0).x;
     float miny = mCloudPtr->at(0).y;
     pcl::fromROSMsg(*msg, *mCloudPtr);
     for (pcl::PointXYZRGBNormal &point: *mCloudPtr) {
+        Eigen::Vector2f xy{point.x, point.y};
         Eigen::Vector3f normal{point.normal_x, point.normal_y, 0.0f};
         Eigen::Vector3f up{0.0f, 0.0f, 1.0f};
         float cost = 1.0f - std::fabs(normal.dot(up));
         auto intCost = static_cast<uint8_t>(std::lround(cost) * std::numeric_limits<uint8_t>::max());
+
+        
         // check here maybe to see if it exists already in costMap
-        std::pair<int, int> currentPoint = convertToCell(point.x, point.y);
-        for (int i = 0; i < (int)mCostMapPoints.size(); ++i) {
+        std::pair<int, int> currentPoint = convertToCell(xy);
+        for (int i = 0; i < (int) mCostMapPoints.size(); ++i) {
             std::pair<int, int> costMapPoint = convertToCell(mCostMapPoints[i].point.x(), mCostMapPoints[i].point.y());
             if (currentPoint == costMapPoint) {
                 mCostMapPoints.erase(mCostMapPoints.begin() + i);
@@ -63,7 +67,7 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
     // Should be done now: Change this to use resolution to calculate indices
     // Idea: for checking duplicates potentially keep track with a set?
-    for (int i = 0; i < (int)mCostMapPoints.size(); ++i) {
+    for (size_t i = 0; i < mCostMapPoints.size(); ++i) {
         std::pair<int, int> currentPoint = convertToCell(mCostMapPoints[i].point.x(), mCostMapPoints[i].point.y());
     }
 
@@ -72,9 +76,11 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     }
 
     mFrameNumber++;
+
+    std::swap(mCostMapPoints, mCostMapPointsScratch);
 }
 
-std::pair<int, int> CostMapNode::convertToCell(float pointx, float pointy) {
+std::pair<size_t, size_t> CostMapNode::convertToCell(Eigen::Vector2f const& point) {
     // HERE: code for the previous way we calculated the indices
     // float differencex = pointx - minx;
     // float differencey = pointy - miny;
@@ -84,7 +90,7 @@ std::pair<int, int> CostMapNode::convertToCell(float pointx, float pointy) {
     float resolution = mLocalGrid.info.resolution;
     // not sure if the width and height we are concerned with is the one in the mapmetadata for the occupancy grid or
     // the width and height specified above. for now i'm gonna assume its just the occupancy grid one
-    uint32_t gridWidth = mLocalGrid.info.width;
-    uint32_t gridHeight = mLocalGrid.info.height;
-    return std::pair<int, int>(floor(pointx / resolution) + (gridWidth / 2), floor(pointy / resolution) + (gridHeight / 2));          
+    Eigen::Vector2f gridDimension{mLocalGrid.info.width, mLocalGrid.info.height};
+    auto index = (point / resolution + gridDimension / 2).cast<size_t>();
+    return {index.x(), index.y()};
 }

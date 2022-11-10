@@ -46,19 +46,30 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
         Eigen::Vector3f up{0.0f, 0.0f, 1.0f};
 
         float costValue = 1.0f - std::fabs(normal.dot(up));
-        auto intCostValue = static_cast<uint8_t>(std::lround(costValue) * std::numeric_limits<uint8_t>::max());
+        auto intCostValue = static_cast<int8_t>(std::lround(costValue * MAX_COST));
         std::pair<size_t, size_t> currentCell = convertToCell(xy);
 
-        auto &cost = mCostMapPoints[currentCell.first][currentCell.second];
-        if (cost) {
-            cost->cost = intCostValue;
-            cost->point = xy;
-        }
+        auto &cost = mCostMapPointsScratch[currentCell.first][currentCell.second];
+    
+        cost.emplace(xy, intCostValue);
+        
     }
 
     std::swap(mCostMapPoints, mCostMapPointsScratch);
 
-    // TODO: put from mCostMapPoints into mLocalGrid
+    // Put costs from mCostMapPoints into mLocalGrid
+    for (size_t i = 0; i < mCostMapPoints.size(); ++i) {
+        for (size_t j = 0; i < mCostMapPoints[i].size(); ++j) {
+            std::pair<size_t, size_t> currentPoint{i, j};
+            auto &point = mCostMapPoints[currentPoint.first][currentPoint.second];
+            if (point) {
+                mLocalGrid.data[i*mCostMapPoints[i].size() + j] = point->cost;
+            } else {
+                mLocalGrid.data[i*mCostMapPoints[i].size() + j] = -1;
+            }
+            
+        }
+    }
 
     if (mPublishCostMaps) {
         mCostMapPub.publish(mLocalGrid);

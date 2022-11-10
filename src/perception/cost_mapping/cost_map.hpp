@@ -18,10 +18,12 @@ using PointCloudPtr = std::shared_ptr<PointCloud>;
 
 struct CostMapPoint {
     Eigen::Vector2f point{};
-    uint8_t cost{};
+    int8_t cost{};
 };
 
 using CostMapGrid = std::vector<std::vector<std::optional<CostMapPoint>>>;
+
+constexpr int8_t MAX_COST = 100;
 
 class CostMapNode {
 private:

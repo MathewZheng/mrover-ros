@@ -200,6 +200,8 @@ else ()
         add_cpp_node_macro(cost_map "src/perception/cost_mapping/*.cpp")
         target_link_libraries(cost_map ${OpenCV_LIBS} ${PCL_LIBRARIES} Eigen3::Eigen se3)
 
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
+
         add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
         add_dependencies(differential_drive_plugin_6w ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
         target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})

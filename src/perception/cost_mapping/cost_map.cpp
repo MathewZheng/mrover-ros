@@ -7,6 +7,7 @@ CostMapNode::CostMapNode() : mNh(), mPnh("~"), mTfListener(mTfBuffer) {
     mCostMapPub = mCMt.advertise<nav_msgs::OccupancyGrid>("cost_maps", 1);
 
     mPcSub = mNh.subscribe("camera/depth/points", 1, &CostMapNode::pointCloudCallback, this);
+    mPreviousPose = SE3::fromTfTree(mTfBuffer, "map", "base_link");
 
     ROS_INFO("Cost map ready");
 }

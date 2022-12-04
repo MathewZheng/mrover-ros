@@ -2,16 +2,21 @@
 
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_srvs/SetBool.h>
+#include <buffer.h>
+#include "../se3.hpp"
 
 #include <pcl_ros/point_cloud.h>
 
 #include <Eigen/Dense>
+#include <geometry_msgs/Pose.h>
 
 #include <vector>
 #include <chrono>
+#include <optional>
 
 using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
 using PointCloudPtr = std::shared_ptr<PointCloud>;
@@ -40,6 +45,8 @@ private:
     CostMapGrid mCostMapPoints;
     CostMapGrid mCostMapPointsScratch;
     size_t mFrameNumber = 0;
+
+    SE3 mPreviousPose;
 
     bool mPublishCostMaps = false;
     bool mIsVerbose = false;

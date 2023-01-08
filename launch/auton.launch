@@ -14,6 +14,7 @@
     -->
     <!-- node to detect AR tags and publish them to the TF tree -->
     <node if="$(arg run_perception)" name="aruco_detect" pkg="mrover" type="aruco_detect"/>
+    <node name="cost_map" pkg="mrover" type="cost_map"/>
 
     <!--
       ===========

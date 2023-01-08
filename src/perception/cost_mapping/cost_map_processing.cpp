@@ -36,11 +36,11 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     for (size_t i = 0; i < mCostMapPoints.size(); ++i) {
         for (size_t j = 0; i < mCostMapPoints[i].size(); ++j) {
             //TODO: make auto and reference??
-            CostMapPoint currentPoint = mCostMapPoints[i][j];
+            std::optional<CostMapPoint> currentPoint = mCostMapPoints[i][j];
             if (currentPoint) {
-                auto newCell = convertToCell(currentPoint.point + translationDiff);
+                auto newCell = convertToCell(currentPoint.value().point + translationDiff);
                 if (newCell) {
-                    mCostMapPointsScratch[i][j] = currentPoint.point + translationDiff;
+                    mCostMapPointsScratch[i][j].value().point = currentPoint.value().point + translationDiff;
                 }
             }
             
@@ -59,11 +59,13 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
         float costValue = 1.0f - std::fabs(normal.dot(up));
         auto intCostValue = static_cast<int8_t>(std::lround(costValue * MAX_COST));
-        std::pair<size_t, size_t> currentCell = convertToCell(xy);
+        std::optional<std::pair<size_t, size_t>> currentCell = convertToCell(xy);
         
         if (currentCell) {
-            auto &cost = mCostMapPointsScratch[currentCell.first][currentCell.second];
-            cost.emplace(xy, intCostValue);
+            auto &cost = mCostMapPointsScratch[currentCell.value().first][currentCell.value().second];
+            //NOTE: might be wrong
+            cost.value().point = xy;
+            cost.value().cost = intCostValue;
         }
         
     }
@@ -100,6 +102,8 @@ std::optional<std::pair<size_t, size_t>> CostMapNode::convertToCell(Eigen::Vecto
     // int indexx = floor(differencex);
     // int indexy = floor(differencey); 
 
+    uint32_t mHeight = 64, mWidth = 64;
+
     float resolution = mLocalGrid.info.resolution;
     // not sure if the width and height we are concerned with is the one in the mapmetadata for the occupancy grid or
     // the width and height specified above. for now i'm gonna assume its just the occupancy grid one
@@ -108,6 +112,7 @@ std::optional<std::pair<size_t, size_t>> CostMapNode::convertToCell(Eigen::Vecto
     if (index.x() > mHeight || index.y() > mWidth) {
         return std::nullopt;
     } else {
-        return {index.x(), index.y()};
+        std::pair<size_t, size_t> cell = {index.x(), index.y()};
+        return cell;
     }
 }

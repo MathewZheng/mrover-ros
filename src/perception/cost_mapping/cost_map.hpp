@@ -6,7 +6,7 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_srvs/SetBool.h>
-#include <buffer.h>
+// #include <buffer.h>
 #include "../se3.hpp"
 
 #include <pcl_ros/point_cloud.h>
@@ -53,7 +53,7 @@ private:
 
     void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg);
 
-    std::pair<size_t, size_t> convertToCell(Eigen::Vector2f const &point);
+    std::optional<std::pair<size_t, size_t>> convertToCell(Eigen::Vector2f const &point);
 
     nav_msgs::OccupancyGrid mLocalGrid;
     PointCloudPtr mCloudPtr = std::make_shared<PointCloud>();

@@ -36,16 +36,22 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     for (size_t i = 0; i < mCostMapPoints.size(); ++i) {
         for (size_t j = 0; i < mCostMapPoints[i].size(); ++j) {
             //TODO: make auto and reference??
+            // TODO: fill mCostMapPointsScratch in with transformed point with delta
             std::optional<CostMapPoint> currentPoint = mCostMapPoints[i][j];
             if (currentPoint) {
                 auto newCell = convertToCell(currentPoint.value().point + translationDiff);
-                if (newCell) {
+                if (newCell) {                  
                     mCostMapPointsScratch[i][j].value().point = currentPoint.value().point + translationDiff;
+                    // TODO: don't fill in points that now lie outside
+                    if (mCostMapPointsScratch[i][j].value().point.x() >= mHeight || mCostMapPointsScratch[i][j].value().point.y() >= mWidth) {
+                        mCostMapPointsScratch[i][j] = std::nullopt;
+                    }           
+                    if (mCostMapPointsScratch[i][j].value().point.x() < 0 || mCostMapPointsScratch[i][j].value().point.y() < 0) {
+                        mCostMapPointsScratch[i][j] = std::nullopt;
+                    }
                 }
             }
             
-            // TODO: fill mCostMapPointsScratch in with transformed point with delta
-            // TODO: don't fill in points that now lie outside
 
         }
     }
@@ -54,6 +60,7 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     pcl::fromROSMsg(*msg, *mCloudPtr);
     for (pcl::PointXYZRGBNormal &point: *mCloudPtr) {
         Eigen::Vector2f xy{point.x, point.y};
+        //NOTE: should z coordinate be 0?
         Eigen::Vector3f normal{point.normal_x, point.normal_y, 0.0f};
         Eigen::Vector3f up{0.0f, 0.0f, 1.0f};
 

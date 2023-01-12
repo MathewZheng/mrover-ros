@@ -23,6 +23,8 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     Eigen::Quaterniond currentQuat = pcTf.rotationQuaternion();
     Eigen::Quaterniond rotationDiff = currentQuat * previousQuat.inverse();
     Eigen::Vector3d translationDiff = pcTf.positionVector() - mPreviousPose.positionVector();
+    // make 2d translation
+    Eigen::Vector2f translationDiff2d{translationDiff.x(), translationDiff.y()};
     SE3 delta;
 
     // Clear scratch buffer
@@ -39,16 +41,11 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
             // TODO: fill mCostMapPointsScratch in with transformed point with delta
             std::optional<CostMapPoint> currentPoint = mCostMapPoints[i][j];
             if (currentPoint) {
-                auto newCell = convertToCell(currentPoint.value().point + translationDiff);
-                if (newCell) {                  
-                    mCostMapPointsScratch[i][j].value().point = currentPoint.value().point + translationDiff;
-                    // TODO: don't fill in points that now lie outside
-                    if (mCostMapPointsScratch[i][j].value().point.x() >= mHeight || mCostMapPointsScratch[i][j].value().point.y() >= mWidth) {
-                        mCostMapPointsScratch[i][j] = std::nullopt;
-                    }           
-                    if (mCostMapPointsScratch[i][j].value().point.x() < 0 || mCostMapPointsScratch[i][j].value().point.y() < 0) {
-                        mCostMapPointsScratch[i][j] = std::nullopt;
-                    }
+                // Don't fill in points that now lie outside
+                auto newCell = convertToCell(currentPoint.value().point + translationDiff2d);
+                if (newCell) {        
+                    //NOTE: should this be [i][j] or [newCell.first][newCell.second]?          
+                    mCostMapPointsScratch[newCell.value().first][newCell.value().second].value().point = currentPoint.value().point + translationDiff2d;
                 }
             }
             
@@ -60,8 +57,8 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     pcl::fromROSMsg(*msg, *mCloudPtr);
     for (pcl::PointXYZRGBNormal &point: *mCloudPtr) {
         Eigen::Vector2f xy{point.x, point.y};
-        //NOTE: should z coordinate be 0?
-        Eigen::Vector3f normal{point.normal_x, point.normal_y, 0.0f};
+        //NOTE: should z coordinate be 0? changed to point.normal_z for now
+        Eigen::Vector3f normal{point.normal_x, point.normal_y, point.normal_z};
         Eigen::Vector3f up{0.0f, 0.0f, 1.0f};
 
         float costValue = 1.0f - std::fabs(normal.dot(up));

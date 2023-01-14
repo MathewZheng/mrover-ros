@@ -7,7 +7,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_srvs/SetBool.h>
 // #include <buffer.h>
-#include "../se3.hpp"
+#include <se3.hpp>
 
 #include <pcl_ros/point_cloud.h>
 

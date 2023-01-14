@@ -1,6 +1,6 @@
 #include "aruco_detect.hpp"
 
-#include "../filter.hpp"
+#include <filter.hpp>
 
 /**
  * Detect tags from raw image using OpenCV and calculate their screen space centers.

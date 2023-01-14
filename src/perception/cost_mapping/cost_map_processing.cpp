@@ -14,14 +14,14 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     
     // idea, create channel iters, xyz (rgb unused), nx, ny, nz
     // iterate w these, publish into nx, ny, nz
-    uint32_t mHeight = 64, mWidth = 64;
+    // uint32_t mHeight = 64, mWidth = 64;
 
     SE3 pcTf = SE3::fromTfTree(mTfBuffer, "map", "base_link");
     // fromTf is still erroring (something about it being inaccessible)
     // TODO: calculate delta using last two poses (quintin: I can provide this)
-    Eigen::Quaterniond previousQuat = mPreviousPose.rotationQuaternion();
-    Eigen::Quaterniond currentQuat = pcTf.rotationQuaternion();
-    Eigen::Quaterniond rotationDiff = currentQuat * previousQuat.inverse();
+    // Eigen::Quaterniond previousQuat = mPreviousPose.rotationQuaternion();
+    // Eigen::Quaterniond currentQuat = pcTf.rotationQuaternion();
+    // Eigen::Quaterniond rotationDiff = currentQuat * previousQuat.inverse();
     Eigen::Vector3d translationDiff = pcTf.positionVector() - mPreviousPose.positionVector();
     // make 2d translation
     Eigen::Vector2f translationDiff2d{translationDiff.x(), translationDiff.y()};

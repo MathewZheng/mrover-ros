@@ -184,11 +184,16 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
+        file(GLOB_RECURSE SE3_SOURCES "src/util/*.cpp")
+        add_library(se3 ${SE3_SOURCES})
+        target_link_libraries(se3 ${catkin_LIBRARIES})
+        include_directories(src/util)
+
         add_cpp_node_macro(aruco_detect "src/perception/cost_mapping/*.cpp")
-        target_link_libraries(aruco_detect ${OpenCV_LIBS} ${PCL_LIBRARIES})
+        target_link_libraries(aruco_detect ${OpenCV_LIBS} ${PCL_LIBRARIES} se3)
 
         add_cpp_node_macro(cost_map "src/perception/aruco/*.cpp")
-        target_link_libraries(cost_map ${OpenCV_LIBS} ${PCL_LIBRARIES} Eigen3::Eigen)
+        target_link_libraries(cost_map ${OpenCV_LIBS} ${PCL_LIBRARIES} Eigen3::Eigen se3)
 
         add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
         add_dependencies(differential_drive_plugin_6w ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

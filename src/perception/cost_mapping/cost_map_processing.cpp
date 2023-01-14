@@ -11,21 +11,20 @@
 */
 void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg) {
     //TODO complete calculation
-    
+
     // idea, create channel iters, xyz (rgb unused), nx, ny, nz
     // iterate w these, publish into nx, ny, nz
     // uint32_t mHeight = 64, mWidth = 64;
 
     SE3 pcTf = SE3::fromTfTree(mTfBuffer, "map", "base_link");
-    // fromTf is still erroring (something about it being inaccessible)
-    // TODO: calculate delta using last two poses (quintin: I can provide this)
-    // Eigen::Quaterniond previousQuat = mPreviousPose.rotationQuaternion();
-    // Eigen::Quaterniond currentQuat = pcTf.rotationQuaternion();
-    // Eigen::Quaterniond rotationDiff = currentQuat * previousQuat.inverse();
-    Eigen::Vector3d translationDiff = pcTf.positionVector() - mPreviousPose.positionVector();
+    Eigen::Vector3d translationDiff;
+    Eigen::Quaterniond rotationDiff;
+    if (mPreviousPose) {
+        translationDiff = pcTf.positionVector() - mPreviousPose->positionVector();
+        rotationDiff = pcTf.rotationQuaternion() * mPreviousPose->rotationQuaternion().inverse();
+    }
     // make 2d translation
-    Eigen::Vector2f translationDiff2d{translationDiff.x(), translationDiff.y()};
-    SE3 delta;
+    Eigen::Vector2d translationDiff2d = translationDiff.head<2>();
 
     // Clear scratch buffer
     for (auto &row: mCostMapPointsScratch) {
@@ -42,36 +41,37 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
             std::optional<CostMapPoint> currentPoint = mCostMapPoints[i][j];
             if (currentPoint) {
                 // Don't fill in points that now lie outside
-                auto newCell = convertToCell(currentPoint.value().point + translationDiff2d);
-                if (newCell) {        
-                    //NOTE: should this be [i][j] or [newCell.first][newCell.second]?          
-                    mCostMapPointsScratch[newCell.value().first][newCell.value().second].value().point = currentPoint.value().point + translationDiff2d;
+                Eigen::Vector2d newPoint = currentPoint.value().point + translationDiff2d;
+                auto newCellIndex = convertToCell(newPoint);
+                if (newCellIndex) {
+                    //NOTE: should this be [i][j] or [newCell.first][newCell.second]?
+                    auto [x, y] = newCellIndex.value();
+                    mCostMapPointsScratch[x][y] = {newPoint, currentPoint->cost};
+//                    mCostMapPointsScratch[x][y].emplace(newPoint, currentPoint->cost);
                 }
             }
-            
-
         }
     }
 
     // Add/replace new point cloud points
     pcl::fromROSMsg(*msg, *mCloudPtr);
     for (pcl::PointXYZRGBNormal &point: *mCloudPtr) {
-        Eigen::Vector2f xy{point.x, point.y};
+        Eigen::Vector2d xy{point.x, point.y};
         //NOTE: should z coordinate be 0? changed to point.normal_z for now
-        Eigen::Vector3f normal{point.normal_x, point.normal_y, point.normal_z};
-        Eigen::Vector3f up{0.0f, 0.0f, 1.0f};
+        Eigen::Vector3d normal{point.normal_x, point.normal_y, point.normal_z};
+        Eigen::Vector3d up{0.0f, 0.0f, 1.0f};
 
-        float costValue = 1.0f - std::fabs(normal.dot(up));
+        float costValue = 1.0 - std::fabs(normal.dot(up));
         auto intCostValue = static_cast<int8_t>(std::lround(costValue * MAX_COST));
         std::optional<std::pair<size_t, size_t>> currentCell = convertToCell(xy);
-        
+
         if (currentCell) {
             auto &cost = mCostMapPointsScratch[currentCell.value().first][currentCell.value().second];
             //NOTE: might be wrong
             cost.value().point = xy;
             cost.value().cost = intCostValue;
         }
-        
+
     }
 
     std::swap(mCostMapPoints, mCostMapPointsScratch);
@@ -82,11 +82,11 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
             std::pair<size_t, size_t> currentPoint{i, j};
             auto &point = mCostMapPoints[currentPoint.first][currentPoint.second];
             if (point) {
-                mLocalGrid.data[i*mCostMapPoints[i].size() + j] = point->cost;
+                mLocalGrid.data[i * mCostMapPoints[i].size() + j] = point->cost;
             } else {
-                mLocalGrid.data[i*mCostMapPoints[i].size() + j] = -1;
+                mLocalGrid.data[i * mCostMapPoints[i].size() + j] = -1;
             }
-            
+
         }
     }
 
@@ -98,7 +98,7 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     mPreviousPose = pcTf;
 }
 
-std::optional<std::pair<size_t, size_t>> CostMapNode::convertToCell(Eigen::Vector2f const &point) {
+std::optional<std::pair<size_t, size_t>> CostMapNode::convertToCell(Eigen::Vector2d const &point) {
     // TODO: return std::optional
     // HERE: code for the previous way we calculated the indices
     // float differencex = pointx - minx;
@@ -108,10 +108,10 @@ std::optional<std::pair<size_t, size_t>> CostMapNode::convertToCell(Eigen::Vecto
 
     uint32_t mHeight = 64, mWidth = 64;
 
-    float resolution = mLocalGrid.info.resolution;
+    double resolution = mLocalGrid.info.resolution;
     // not sure if the width and height we are concerned with is the one in the mapmetadata for the occupancy grid or
     // the width and height specified above. for now i'm gonna assume its just the occupancy grid one
-    Eigen::Vector2f gridDimension{mLocalGrid.info.width, mLocalGrid.info.height};
+    Eigen::Vector2d gridDimension{mLocalGrid.info.width, mLocalGrid.info.height};
     auto index = (point / resolution + gridDimension / 2).cast<size_t>();
     if (index.x() > mHeight || index.y() > mWidth) {
         return std::nullopt;

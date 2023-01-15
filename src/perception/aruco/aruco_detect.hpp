@@ -22,7 +22,6 @@
 #include <filter.hpp>
 #include <se3.hpp>
 
-
 constexpr char const* ODOM_FRAME = "map";
 constexpr char const* ROVER_FRAME = "base_link";
 

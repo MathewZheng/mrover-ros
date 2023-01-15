@@ -189,10 +189,10 @@ else ()
         target_link_libraries(se3 ${catkin_LIBRARIES})
         include_directories(src/util)
 
-        add_cpp_node_macro(aruco_detect "src/perception/cost_mapping/*.cpp")
+        add_cpp_node_macro(aruco_detect "src/perception/aruco/*.cpp")
         target_link_libraries(aruco_detect ${OpenCV_LIBS} ${PCL_LIBRARIES} se3)
 
-        add_cpp_node_macro(cost_map "src/perception/aruco/*.cpp")
+        add_cpp_node_macro(cost_map "src/perception/cost_mapping/*.cpp")
         target_link_libraries(cost_map ${OpenCV_LIBS} ${PCL_LIBRARIES} Eigen3::Eigen se3)
 
         add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)

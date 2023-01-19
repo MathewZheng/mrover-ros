@@ -198,7 +198,7 @@ else ()
         target_link_libraries(se3 ${catkin_LIBRARIES})
         include_directories(src/util)
 
-        add_cpp_node_macro(aruco_detect "src/perception/aruco/*.cpp")
+        add_cpp_node_macro(aruco_detect "src/perception/tag/*.cpp")
         target_link_libraries(aruco_detect ${OpenCV_LIBS} ${PCL_LIBRARIES} se3)
 
         add_cpp_node_macro(cost_map "src/perception/cost_mapping/*.cpp")

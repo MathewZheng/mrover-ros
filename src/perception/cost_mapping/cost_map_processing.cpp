@@ -26,6 +26,8 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     Eigen::Quaterniond rotationDiff;
     if (mPreviousPose) {
         translationDiff = pcTf.positionVector() - mPreviousPose->positionVector();
+
+        // rotationDiff should be from north instead of from previous pose because grid stays oriented North
         rotationDiff = pcTf.rotationQuaternion() * mPreviousPose->rotationQuaternion().inverse();
     }
     // make 2d translation
@@ -69,14 +71,12 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
         float costValue = 1.0 - std::fabs(normal.dot(up));
         auto intCostValue = static_cast<int8_t>(std::lround(costValue * MAX_COST));
         std::optional<std::pair<size_t, size_t>> currentCell = convertToCell(xy);
-
         if (currentCell) {
-            auto &cost = mCostMapPointsScratch[currentCell.value().first][currentCell.value().second];
+            auto &cost = mCostMapPointsScratch[currentCell->first][currentCell->second];
+            // std::cout << currentCell->first << " " << currentCell->second << " " << xy.x() << " " << xy.y() << "\n";
             //NOTE: might be wrong
-            if(cost) {
-                cost->point = xy;
-                cost->cost = intCostValue; 
-            } 
+            cost->point = xy;
+            cost->cost = intCostValue; 
         }
 
     }
@@ -89,12 +89,15 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
             std::pair<size_t, size_t> currentPoint{i, j};
             auto &point = mCostMapPoints[currentPoint.first][currentPoint.second];
             if (point) {
+                // std::cout << "A ";
                 mLocalGrid.data[i * mCostMapPoints.size() + j] = point->cost;
             } else {
+                // std::cout << "E ";
                 mLocalGrid.data[i * mCostMapPoints.size() + j] = -1;
             }
 
         }
+        // std::cout << "\n";
     }
 
     if (mPublishCostMaps) {

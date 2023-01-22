@@ -33,16 +33,16 @@ int main(int argc, char **argv) {
     // We're going to make an ellipse extruded along the z-axis. The colour for
     // the XYZRGB cloud will gradually go from red to green to blue.
     std::uint8_t r(255), g(15), b(15);
-    for (float z(-1.0); z <= 1.0; z += 0.05)
+    for (float z(-20.0); z <= 20.0; z += 0.05)
     {
         for (float angle(0.0); angle <= 360.0; angle += 5.0)
         {
         pcl::PointXYZRGBNormal point;
-        point.x = 0.5 * std::cos (pcl::deg2rad(angle));
+        point.x = 64 * std::cos (pcl::deg2rad(angle));
         point.y = sinf (pcl::deg2rad(angle));
         point.z = z;
-        point.normal_x = 0;
-        point.normal_y = 0;
+        point.normal_x = 1;
+        point.normal_y = 1;
         point.normal_z = 1;
         point_cloud_ptr->points.push_back(point);
 
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     pcl::toROSMsg(*point_cloud_ptr, *msg);
     node->pointCloudCallback(msg);
 
-    ros::spin();
+    // ros::spin();
 
     return EXIT_SUCCESS;
 }

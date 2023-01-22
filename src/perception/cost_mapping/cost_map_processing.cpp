@@ -15,8 +15,13 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     // idea, create channel iters, xyz (rgb unused), nx, ny, nz
     // iterate w these, publish into nx, ny, nz
     // uint32_t mHeight = 64, mWidth = 64;
-
-    SE3 pcTf = SE3::fromTfTree(mTfBuffer, "map", "base_link");
+    SE3 pcTf;
+    try {
+        pcTf = SE3::fromTfTree(mTfBuffer, "map", "base_link");
+    }
+    catch(...) {
+        ROS_WARN("Error reading fromTfTree");
+    }
     Eigen::Vector3d translationDiff;
     Eigen::Quaterniond rotationDiff;
     if (mPreviousPose) {
@@ -35,13 +40,13 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
     // Transform all current points
     for (size_t i = 0; i < mCostMapPoints.size(); ++i) {
-        for (size_t j = 0; i < mCostMapPoints[i].size(); ++j) {
+        for (size_t j = 0; j < mCostMapPoints[i].size(); ++j) {
             //TODO: make auto and reference??
             // TODO: fill mCostMapPointsScratch in with transformed point with delta
             std::optional<CostMapPoint> currentPoint = mCostMapPoints[i][j];
             if (currentPoint) {
                 // Don't fill in points that now lie outside
-                Eigen::Vector2d newPoint = currentPoint.value().point + translationDiff2d;
+                Eigen::Vector2d newPoint = currentPoint.value().point - translationDiff2d;
                 auto newCellIndex = convertToCell(newPoint);
                 if (newCellIndex) {
                     //NOTE: should this be [i][j] or [newCell.first][newCell.second]?
@@ -68,8 +73,10 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
         if (currentCell) {
             auto &cost = mCostMapPointsScratch[currentCell.value().first][currentCell.value().second];
             //NOTE: might be wrong
-            cost.value().point = xy;
-            cost.value().cost = intCostValue;
+            if(cost) {
+                cost->point = xy;
+                cost->cost = intCostValue; 
+            } 
         }
 
     }
@@ -78,13 +85,13 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
     // Put costs from mCostMapPoints into mLocalGrid
     for (size_t i = 0; i < mCostMapPoints.size(); ++i) {
-        for (size_t j = 0; i < mCostMapPoints[i].size(); ++j) {
+        for (size_t j = 0; j < mCostMapPoints[i].size(); ++j) {
             std::pair<size_t, size_t> currentPoint{i, j};
             auto &point = mCostMapPoints[currentPoint.first][currentPoint.second];
             if (point) {
-                mLocalGrid.data[i * mCostMapPoints[i].size() + j] = point->cost;
+                mLocalGrid.data[i * mCostMapPoints.size() + j] = point->cost;
             } else {
-                mLocalGrid.data[i * mCostMapPoints[i].size() + j] = -1;
+                mLocalGrid.data[i * mCostMapPoints.size() + j] = -1;
             }
 
         }

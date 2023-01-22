@@ -51,13 +51,14 @@ private:
     bool mPublishCostMaps = false;
     bool mIsVerbose = false;
 
-    void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg);
+    
+
 
     std::optional<std::pair<size_t, size_t>> convertToCell(Eigen::Vector2d const &point);
-
     nav_msgs::OccupancyGrid mLocalGrid;
     PointCloudPtr mCloudPtr = std::make_shared<PointCloud>();
 
 public:
     CostMapNode();
+    void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg);
 };

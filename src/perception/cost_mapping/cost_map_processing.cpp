@@ -75,6 +75,13 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
             auto &cost = mCostMapPointsScratch[currentCell->first][currentCell->second];
             // std::cout << currentCell->first << " " << currentCell->second << " " << xy.x() << " " << xy.y() << "\n";
             //NOTE: might be wrong
+            // cost.value().emplace(xy, intCostValue);
+            // might need to convert normals to unit normals
+            if(!cost)
+            {
+                // std::cout << "nullopt\n";
+            }
+            cost.emplace();
             cost->point = xy;
             cost->cost = intCostValue; 
         }
@@ -89,15 +96,15 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
             std::pair<size_t, size_t> currentPoint{i, j};
             auto &point = mCostMapPoints[currentPoint.first][currentPoint.second];
             if (point) {
-                // std::cout << "A ";
+                // std::cout << point->cost << " ";
                 mLocalGrid.data[i * mCostMapPoints.size() + j] = point->cost;
             } else {
-                // std::cout << "E ";
+                //std::cout << -1 << " ";
                 mLocalGrid.data[i * mCostMapPoints.size() + j] = -1;
             }
 
         }
-        // std::cout << "\n";
+        //std::cout << "\n";
     }
 
     if (mPublishCostMaps) {

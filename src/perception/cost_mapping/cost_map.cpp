@@ -18,6 +18,9 @@ CostMapNode::CostMapNode() : mNh(), mPnh("~"), mTfListener(mTfBuffer) {
     mCostMapPointsScratch.resize(64, std::vector<std::optional<CostMapPoint>>(64, std::nullopt));
 
     mLocalGrid.data.resize(4096, -1);
+    mLocalGrid.info.width = 64;
+    mLocalGrid.info.height = 64;
+    mLocalGrid.info.resolution = 1;
 
     ROS_INFO("Cost map ready");
 }
@@ -41,9 +44,9 @@ int main(int argc, char **argv) {
         point.x = 64 * std::cos (pcl::deg2rad(angle));
         point.y = sinf (pcl::deg2rad(angle));
         point.z = z;
-        point.normal_x = 1;
+        point.normal_x = 0;
         point.normal_y = 1;
-        point.normal_z = 1;
+        point.normal_z = 0;
         point_cloud_ptr->points.push_back(point);
 
         std::uint32_t rgb = (static_cast<std::uint32_t>(r) << 16 |
@@ -70,7 +73,10 @@ int main(int argc, char **argv) {
 
     sensor_msgs::PointCloud2Ptr msg = boost::make_shared<sensor_msgs::PointCloud2>();
     pcl::toROSMsg(*point_cloud_ptr, *msg);
-    node->pointCloudCallback(msg);
+    while (ros::ok()) {
+        node->pointCloudCallback(msg);
+        ros::spinOnce();
+    }
 
     // ros::spin();
 

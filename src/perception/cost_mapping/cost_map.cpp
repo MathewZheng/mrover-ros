@@ -41,12 +41,12 @@ int main(int argc, char **argv) {
         for (float angle(0.0); angle <= 360.0; angle += 5.0)
         {
         pcl::PointXYZRGBNormal point;
-        point.x = 64 * std::cos (pcl::deg2rad(angle));
-        point.y = sinf (pcl::deg2rad(angle));
+        point.x = 8 * std::cos (pcl::deg2rad(angle));
+        point.y = 8 * sinf (pcl::deg2rad(angle));
         point.z = z;
-        point.normal_x = 0;
-        point.normal_y = 1;
-        point.normal_z = 0;
+        point.normal_x = 1/sqrt(3);
+        point.normal_y = 1/sqrt(3);
+        point.normal_z = 1/sqrt(3);
         point_cloud_ptr->points.push_back(point);
 
         std::uint32_t rgb = (static_cast<std::uint32_t>(r) << 16 |
@@ -73,8 +73,8 @@ int main(int argc, char **argv) {
 
     sensor_msgs::PointCloud2Ptr msg = boost::make_shared<sensor_msgs::PointCloud2>();
     pcl::toROSMsg(*point_cloud_ptr, *msg);
+    node->pointCloudCallback(msg);
     while (ros::ok()) {
-        node->pointCloudCallback(msg);
         ros::spinOnce();
     }
 

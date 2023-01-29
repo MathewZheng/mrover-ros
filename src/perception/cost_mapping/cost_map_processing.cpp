@@ -27,7 +27,7 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     if (mPreviousPose) {
         translationDiff = pcTf.positionVector() - mPreviousPose->positionVector();
 
-        // rotationDiff should be from north instead of from previous pose because grid stays oriented North
+        // TODO: rotationDiff should be from north instead of from previous pose because grid stays oriented North
         rotationDiff = pcTf.rotationQuaternion() * mPreviousPose->rotationQuaternion().inverse();
     }
     // make 2d translation
@@ -64,6 +64,8 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     pcl::fromROSMsg(*msg, *mCloudPtr);
     for (pcl::PointXYZRGBNormal &point: *mCloudPtr) {
         Eigen::Vector2d xy{point.x, point.y};
+        // Rotate point around rover by rover rotation diff
+
         //NOTE: should z coordinate be 0? changed to point.normal_z for now
         Eigen::Vector3d normal{point.normal_x, point.normal_y, point.normal_z};
         Eigen::Vector3d up{0.0f, 0.0f, 1.0f};
@@ -130,7 +132,7 @@ std::optional<std::pair<size_t, size_t>> CostMapNode::convertToCell(Eigen::Vecto
     // the width and height specified above. for now i'm gonna assume its just the occupancy grid one
     Eigen::Vector2d gridDimension{mLocalGrid.info.width, mLocalGrid.info.height};
     auto index = (point / resolution + gridDimension / 2).cast<size_t>();
-    if (index.x() > mHeight || index.y() > mWidth) {
+    if (index.x() >= mHeight || index.y() >= mWidth) {
         return std::nullopt;
     } else {
         std::pair<size_t, size_t> cell = {index.x(), index.y()};

@@ -28,7 +28,7 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
         translationDiff = pcTf.positionVector() - mPreviousPose->positionVector();
 
         // TODO: rotationDiff should be from north instead of from previous pose because grid stays oriented North
-        rotationDiff = pcTf.rotationQuaternion() * mPreviousPose->rotationQuaternion().inverse();
+
     }
     // make 2d translation
     Eigen::Vector2d translationDiff2d = translationDiff.head<2>();
@@ -63,7 +63,9 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     // Add/replace new point cloud points
     pcl::fromROSMsg(*msg, *mCloudPtr);
     for (pcl::PointXYZRGBNormal &point: *mCloudPtr) {
-        Eigen::Vector2d xy{point.x, point.y};
+        Eigen::Vector3d xyz{point.x, point.y, point.z};
+        xyz = pcTf.rotationQuaternion() * xyz;
+        Eigen::Vector2d xy = xyz.head<2>();
         // Rotate point around rover by rover rotation diff
 
         //NOTE: should z coordinate be 0? changed to point.normal_z for now
@@ -72,17 +74,14 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
         float costValue = 1.0 - std::fabs(normal.dot(up));
         auto intCostValue = static_cast<int8_t>(std::lround(costValue * MAX_COST));
-        std::optional<std::pair<size_t, size_t>> currentCell = convertToCell(xy);
+        auto currentCell = convertToCell(xy);
         if (currentCell) {
-            auto &cost = mCostMapPointsScratch[currentCell->first][currentCell->second];
-            // std::cout << currentCell->first << " " << currentCell->second << " " << xy.x() << " " << xy.y() << "\n";
+            auto [x, y] = currentCell.value();
+            auto &cost = mCostMapPointsScratch[x][y];
             //NOTE: might be wrong
-            // cost.value().emplace(xy, intCostValue);
             // might need to convert normals to unit normals
-            if(!cost)
-            {
-                // std::cout << "nullopt\n";
-            }
+
+            // Emplace needed to run first to initialize point in grid, would throw errors otherwise
             cost.emplace();
             cost->point = xy;
             cost->cost = intCostValue; 

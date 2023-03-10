@@ -19,7 +19,7 @@
 #include <optional>
 
 using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
-using PointCloudPtr = std::shared_ptr<PointCloud>;
+using PointCloudPtr = PointCloud::Ptr;
 
 struct CostMapPoint {
     Eigen::Vector2d point{};
@@ -56,7 +56,7 @@ private:
 
     std::optional<std::pair<size_t, size_t>> convertToCell(Eigen::Vector2d const &point);
     nav_msgs::OccupancyGrid mLocalGrid;
-    PointCloudPtr mCloudPtr = std::make_shared<PointCloud>();
+    PointCloudPtr mCloudPtr = boost::make_shared<PointCloud>();
 
 public:
     CostMapNode();

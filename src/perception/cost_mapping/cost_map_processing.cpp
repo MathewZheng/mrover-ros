@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include <pcl/features/normal_3d.h>
 
 #include <limits>
 
@@ -62,7 +63,20 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
     // Add/replace new point cloud points
     pcl::fromROSMsg(*msg, *mCloudPtr);
-    for (pcl::PointXYZRGBNormal &point: *mCloudPtr) {
+    // pcl::NormalEstimation<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal> ne;
+    // ne.setInputCloud(mCloudPtr);
+    // pcl::search::KdTree<pcl::PointXYZRGBNormal>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBNormal> ());
+    // ne.setSearchMethod(tree);
+    // pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_normals (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+    // ne.setRadiusSearch(0.03);
+    // ne.compute(*cloud_normals);
+
+
+    for (size_t i = 0; i < (*mCloudPtr).size(); i++) {
+        pcl::PointXYZRGBNormal &point = (*mCloudPtr)[i];
+        // point.normal_x = ((*cloud_normals)[i].normal_x);
+        // point.normal_y = ((*cloud_normals)[i].normal_y);
+        // point.normal_z = ((*cloud_normals)[i].normal_z);
         Eigen::Vector3d xyz{point.x, point.y, point.z};
         xyz = pcTf.rotationQuaternion() * xyz;
         Eigen::Vector2d xy = xyz.head<2>();
@@ -126,10 +140,10 @@ std::optional<std::pair<size_t, size_t>> CostMapNode::convertToCell(Eigen::Vecto
 
     uint32_t mHeight = 64, mWidth = 64;
 
-    double resolution = mLocalGrid.info.resolution;
+    double resolution = 1;
     // not sure if the width and height we are concerned with is the one in the mapmetadata for the occupancy grid or
     // the width and height specified above. for now i'm gonna assume its just the occupancy grid one
-    Eigen::Vector2d gridDimension{mLocalGrid.info.width, mLocalGrid.info.height};
+    Eigen::Vector2d gridDimension{mWidth, mHeight};
     auto index = (point / resolution + gridDimension / 2).cast<size_t>();
     if (index.x() >= mHeight || index.y() >= mWidth) {
         return std::nullopt;

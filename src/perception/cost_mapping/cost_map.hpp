@@ -26,9 +26,12 @@ struct CostMapPoint {
     int8_t cost{};
 };
 
-using CostMapGrid = std::vector<std::vector<std::optional<CostMapPoint>>>;
+using CostMapPointList = std::vector<CostMapPoint>;
+
+using CostMapGrid = std::vector<std::vector<CostMapPointList>>;
 
 constexpr int8_t MAX_COST = 100;
+constexpr size_t BIN_MAX = 5;
 
 class CostMapNode {
 private:

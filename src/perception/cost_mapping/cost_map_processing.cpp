@@ -10,7 +10,7 @@
  *  c(x,y) = 1 - abs(dot(unit(normal(x,y)), <0, 0, 1>))
  * 
 */
-void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg) {
+void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
     //TODO complete calculation
 
     // idea, create channel iters, xyz (rgb unused), nx, ny, nz
@@ -19,8 +19,7 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     SE3 pcTf;
     try {
         pcTf = SE3::fromTfTree(mTfBuffer, "map", "base_link");
-    }
-    catch(...) {
+    } catch (...) {
         ROS_WARN("Error reading fromTfTree");
     }
     Eigen::Vector3d translationDiff;
@@ -29,15 +28,14 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
         translationDiff = pcTf.positionVector() - mPreviousPose->positionVector();
 
         // TODO: rotationDiff should be from north instead of from previous pose because grid stays oriented North
-
     }
     // make 2d translation
     Eigen::Vector2d translationDiff2d = translationDiff.head<2>();
 
     // Clear scratch buffer
-    for (auto &row: mCostMapPointsScratch) {
-        for (auto &cost: row) {
-            cost = std::nullopt;
+    for (auto& row: mCostMapPointsScratch) {
+        for (auto& cost: row) {
+            cost.clear();
         }
     }
 
@@ -46,16 +44,21 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
         for (size_t j = 0; j < mCostMapPoints[i].size(); ++j) {
             //TODO: make auto and reference??
             // TODO: fill mCostMapPointsScratch in with transformed point with delta
-            std::optional<CostMapPoint> currentPoint = mCostMapPoints[i][j];
-            if (currentPoint) {
+            CostMapPointList currentPoint = mCostMapPoints[i][j];
+            if (currentPoint.size() > 0) {
                 // Don't fill in points that now lie outside
-                Eigen::Vector2d newPoint = currentPoint.value().point - translationDiff2d;
-                auto newCellIndex = convertToCell(newPoint);
-                if (newCellIndex) {
-                    //NOTE: should this be [i][j] or [newCell.first][newCell.second]?
-                    auto [x, y] = newCellIndex.value();
-                    mCostMapPointsScratch[x][y] = {newPoint, currentPoint->cost};
-//                    mCostMapPointsScratch[x][y].emplace(newPoint, currentPoint->cost);
+                for (size_t k = 0; k < currentPoint.size(); ++k) {
+                    Eigen::Vector2d newPoint = currentPoint[k].point - translationDiff2d;
+                    auto newCellIndex = convertToCell(newPoint);
+                    if (newCellIndex) {
+                        //NOTE: should this be [i][j] or [newCell.first][newCell.second]?
+                        auto [x, y] = newCellIndex.value();
+                        if(mCostMapPointsScratch[x][y].size() == BIN_MAX) {
+                            mCostMapPointsScratch[x][y].erase(mCostMapPointsScratch[x][y].begin());
+                        }
+                        mCostMapPointsScratch[x][y].push_back({newPoint, currentPoint[k].cost});
+                        //                    mCostMapPointsScratch[x][y].emplace(newPoint, currentPoint->cost);
+                    }
                 }
             }
         }
@@ -63,20 +66,21 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
 
     // Add/replace new point cloud points
     pcl::fromROSMsg(*msg, *mCloudPtr);
-    // pcl::NormalEstimation<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal> ne;
-    // ne.setInputCloud(mCloudPtr);
-    // pcl::search::KdTree<pcl::PointXYZRGBNormal>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBNormal> ());
-    // ne.setSearchMethod(tree);
-    // pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_normals (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
-    // ne.setRadiusSearch(0.03);
-    // ne.compute(*cloud_normals);
+    pcl::NormalEstimation<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal> ne;
+    ne.setInputCloud(mCloudPtr);
+    pcl::search::KdTree<pcl::PointXYZRGBNormal>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGBNormal>());
+    ne.setSearchMethod(tree);
+    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_normals(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+    ne.setRadiusSearch(0.03);
+    ne.setViewPoint(0, 0, 100);
+    ne.compute(*cloud_normals);
 
 
     for (size_t i = 0; i < (*mCloudPtr).size(); i++) {
-        pcl::PointXYZRGBNormal &point = (*mCloudPtr)[i];
-        // point.normal_x = ((*cloud_normals)[i].normal_x);
-        // point.normal_y = ((*cloud_normals)[i].normal_y);
-        // point.normal_z = ((*cloud_normals)[i].normal_z);
+        pcl::PointXYZRGBNormal& point = (*mCloudPtr)[i];
+        point.normal_x = ((*cloud_normals)[i].normal_x);
+        point.normal_y = ((*cloud_normals)[i].normal_y);
+        point.normal_z = ((*cloud_normals)[i].normal_z);
         Eigen::Vector3d xyz{point.x, point.y, point.z};
         xyz = pcTf.rotationQuaternion() * xyz;
         Eigen::Vector2d xy = xyz.head<2>();
@@ -91,16 +95,16 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
         auto currentCell = convertToCell(xy);
         if (currentCell) {
             auto [x, y] = currentCell.value();
-            auto &cost = mCostMapPointsScratch[x][y];
+            auto& cost = mCostMapPointsScratch[x][y];
             //NOTE: might be wrong
             // might need to convert normals to unit normals
 
             // Emplace needed to run first to initialize point in grid, would throw errors otherwise
-            cost.emplace();
-            cost->point = xy;
-            cost->cost = intCostValue; 
+            if(cost.size() == BIN_MAX) {
+                cost.erase(cost.begin());
+            }
+            cost.push_back({xy, intCostValue});
         }
-
     }
 
     std::swap(mCostMapPoints, mCostMapPointsScratch);
@@ -109,15 +113,12 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     for (size_t i = 0; i < mCostMapPoints.size(); ++i) {
         for (size_t j = 0; j < mCostMapPoints[i].size(); ++j) {
             std::pair<size_t, size_t> currentPoint{i, j};
-            auto &point = mCostMapPoints[currentPoint.first][currentPoint.second];
-            if (point) {
-                // std::cout << point->cost << " ";
-                mLocalGrid.data[i * mCostMapPoints.size() + j] = point->cost;
-            } else {
-                //std::cout << -1 << " ";
+            auto& point = mCostMapPoints[currentPoint.first][currentPoint.second];
+            if( mCostMapPoints[i][j].size() == 0) {
                 mLocalGrid.data[i * mCostMapPoints.size() + j] = -1;
+            } else {
+                mLocalGrid.data[i * mCostMapPoints.size() + j] = point[mCostMapPoints[i][j].size() - 1].cost;
             }
-
         }
         //std::cout << "\n";
     }
@@ -130,13 +131,13 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg
     mPreviousPose = pcTf;
 }
 
-std::optional<std::pair<size_t, size_t>> CostMapNode::convertToCell(Eigen::Vector2d const &point) {
+std::optional<std::pair<size_t, size_t>> CostMapNode::convertToCell(Eigen::Vector2d const& point) {
     // TODO: return std::optional
     // HERE: code for the previous way we calculated the indices
     // float differencex = pointx - minx;
     // float differencey = pointy - miny;
     // int indexx = floor(differencex);
-    // int indexy = floor(differencey); 
+    // int indexy = floor(differencey);
 
     uint32_t mHeight = 64, mWidth = 64;
 

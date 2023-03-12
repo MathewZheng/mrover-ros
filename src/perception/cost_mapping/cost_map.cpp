@@ -21,6 +21,8 @@ CostMapNode::CostMapNode() : mNh(), mPnh("~"), mTfListener(mTfBuffer) {
     mLocalGrid.info.width = 64;
     mLocalGrid.info.height = 64;
     mLocalGrid.info.resolution = 1;
+    mLocalGrid.info.origin.position.x = -32;
+    mLocalGrid.info.origin.position.y = -32;
 
     ROS_INFO("Cost map ready");
 }

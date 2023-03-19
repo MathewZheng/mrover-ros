@@ -26,7 +26,10 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg
     Eigen::Quaterniond rotationDiff;
     if (mPreviousPose) {
         translationDiff = pcTf.positionVector() - mPreviousPose->positionVector();
-
+        //  change the grid position
+        mLocalGrid.info.origin.position.x += translationDiff.x();
+        mLocalGrid.info.origin.position.y += translationDiff.y();
+        mLocalGrid.info.origin.position.z += translationDiff.z();
         // TODO: rotationDiff should be from north instead of from previous pose because grid stays oriented North
     }
     // make 2d translation

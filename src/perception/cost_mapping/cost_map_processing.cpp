@@ -112,12 +112,12 @@ void CostMapNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg
     // Put costs from mCostMapPoints into mLocalGrid
     for (size_t i = 0; i < mCostMapPoints.size(); ++i) {
         for (size_t j = 0; j < mCostMapPoints[i].size(); ++j) {
-            std::pair<size_t, size_t> currentPoint{j, i};
-            auto& point = mCostMapPoints[currentPoint.second][currentPoint.first];
-            if( mCostMapPoints[j][i].size() == 0) {
-                mLocalGrid.data[j * mCostMapPoints.size() + i] = -1;
+            std::pair<size_t, size_t> currentPoint{i, j};
+            auto& point = mCostMapPoints[currentPoint.first][currentPoint.second];
+            if( mCostMapPoints[i][j].size() == 0) {
+                mLocalGrid.data[i * mCostMapPoints.size() + j] = -1;
             } else {
-                mLocalGrid.data[j * mCostMapPoints.size() + i] = point[mCostMapPoints[j][i].size() - 1].cost;
+                mLocalGrid.data[i * mCostMapPoints.size() + j] = point[mCostMapPoints[i][j].size() - 1].cost;
             }
         }
         //std::cout << "\n";

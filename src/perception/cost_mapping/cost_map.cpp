@@ -22,8 +22,17 @@ CostMapNode::CostMapNode() : mNh(), mPnh("~"), mTfListener(mTfBuffer) {
     mLocalGrid.info.height = 64;
     mLocalGrid.info.resolution = 1;
     mLocalGrid.info.origin.position.x = -32;
-    mLocalGrid.info.origin.position.y = -32;
+    mLocalGrid.info.origin.position.y = 32;
+    mLocalGrid.info.origin.position.z = 0;  
 
+    // make a quaternion from roll/pitch/yaw (in radians)
+    tf2::Quaternion q;
+    q.setRPY(0, 0, - 3.14 / 2);
+    mLocalGrid.info.origin.orientation.x = q.x();
+    mLocalGrid.info.origin.orientation.y = q.y();
+    mLocalGrid.info.origin.orientation.z = q.z();
+    mLocalGrid.info.origin.orientation.w = q.w();
+    
     ROS_INFO("Cost map ready");
 }
 

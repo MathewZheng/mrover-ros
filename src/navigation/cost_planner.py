@@ -40,13 +40,14 @@ class CostPlanner:
         height = costmap.info.height
         map_data = costmap.data
         # start_x, start_y = self.world_to_map(origin_x, origin_y, resolution, goal.pose.position.x, goal.pose.position.y)
-        # goal from nav and path sent to nav
-        goal_x, goal_y = self.world_to_map(origin_x, origin_y, resolution, goal.pose.orientation.x, goal.pose.orientation.y)
 
         # we want start is relative to the rover
         start_x, start_y = self.world_to_map(origin_x, origin_y, resolution, 0, 0)
         start = (start_x, start_y)
         goal = (goal_x, goal_y)
+
+        # goal from nav and path sent to nav
+        goal_x, goal_y = self.world_to_map(origin_x, origin_y, resolution, goal.pose.orientation.x, goal.pose.orientation.y)
 
         # A*
         def heuristic(node):
@@ -72,7 +73,7 @@ class CostPlanner:
                     cost_so_far[next] = new_cost
                     priority = new_cost + heuristic(next)
                     heapq.heappush(frontier, (priority, next))
-                    came_from[next] = current
+                    came_from[next] = current;
 
         # Reconstruct path
         path = [goal]

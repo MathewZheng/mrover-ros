@@ -9,30 +9,30 @@ from std_msgs.msg import Bool
 
 class CostPlanner:
     # design as a service
-    # def __init__(self):
-    #     rospy.init_node("cost_planner")
+    def __init__(self):
+        rospy.init_node("cost_planner")
         
-    #     self.goal = None
-    #     self.costmap = None
+        self.goal = None
+        self.costmap = None
 
-    # def goal_callback(self, data):
-    #     self.goal = data
+    def goal_callback(self, data):
+        self.goal = data
 
-    # def costmap_callback(self, data):
-    #     self.costmap = data
+    def costmap_callback(self, data):
+        self.costmap = data
 
-    # def run(self):
-    #     while not rospy.is_shutdown():
-    #         if self.goal and self.costmap:
-    #             plan, path = self.generate_plan_and_path(self.goal, self.costmap)
-    #             self.plan_pub.publish(plan)
-    #             self.path_pub.publish(path)
-    #             self.goal = None
-    #             self.costmap = None
-    #         self.rate.sleep()
+    def run(self):
+        while not rospy.is_shutdown():
+            if self.goal and self.costmap:
+                plan, path = self.generate_plan_and_path(self.goal, self.costmap)
+                self.plan_pub.publish(plan)
+                self.path_pub.publish(path)
+                self.goal = None
+                self.costmap = None
+            self.rate.sleep()
 
-    def generate_plan_and_path(self, goal, costmap):
-        # will be in the map frame 
+    def generate_plan_and_path(self, goal, costmap): 
+        # will be in the map frame (we still need to figure out map_to world and world_to_map)
         resolution = costmap.info.resolution
         origin_x = costmap.info.origin.position.x
         origin_y = costmap.info.origin.position.y
@@ -93,4 +93,28 @@ class CostPlanner:
             plan.append(pose)
 
         return plan, path
+    
+
+def world_to_map(self, origin_x, origin_y, resolution, world_x, world_y):
+    map_x = int((world_x - origin_x) / resolution)
+    map_y = int((world_y - origin_y) / resolution)
+    return map_x, map_y
+
+def map_to_world(self, origin_x, origin_y, resolution, map_x, map_y):
+    world_x = origin_x + map_x * resolution
+    world_y = origin_y + map_y * resolution
+    return world_x, world_y
+
+def get_cost(self, x1, y1, x2, y2, map_data, width):
+    if x1 == x2 and y1 == y2:
+        return 0
+    elif x1 == x2 or y1 == y2:
+        return 1
+    else:
+        # Diagonal
+        if map_data[y1 * width + x1] == 0 and map_data[y2 * width + x2] == 0:
+            return 1.414
+        else:
+            return 1000
+
         

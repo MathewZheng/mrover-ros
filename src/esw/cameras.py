@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import os
+from datetime import datetime
 
 import rospy
 
@@ -22,6 +24,7 @@ from mrover.srv import (
 
 PRIMARY_IP: str = rospy.get_param("cameras/ips/primary")
 SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
+VIDEO_FILE_LOC: str = rospy.get_param("cameras/video_file_root")
 
 
 class CameraTypeInfo:
@@ -133,6 +136,7 @@ class Stream:
         self._cmd = cmd
         self._cmd.device = req.camera_cmd.device
         self._cmd.resolution = req.camera_cmd.resolution
+        self._cmd.write_frames_to_file = req.camera_cmd.write_frames_to_file
 
         self.primary = req.primary
         self.port = port
@@ -145,6 +149,7 @@ class Stream:
                 5000 + self.port,
                 req.camera_cmd.resolution,
                 camera_type,
+                req.camera_cmd.write_frames_to_file,
             ),
         )
 
@@ -352,6 +357,7 @@ def send(
     port: int = 5000,
     quality: int = 0,
     camera_type: str = "",
+    write_frames_to_file: bool = False,
 ):
     # Construct video capture pipeline string using str.join()
 
@@ -403,6 +409,14 @@ def send(
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
     out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), True)
 
+    # openCV write to file if enabled
+    out_write = None
+    if write_frames_to_file:
+        write_fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+        output_filepath = os.path.join(VIDEO_FILE_LOC, f"camera_stream_{timestamp}.mp4")
+        out_write = cv2.VideoWriter(output_filepath, write_fourcc, 60, (int(width), int(height)), True)
+
     rospy.loginfo(
         f"\nTransmitting /dev/video{str(device)} to {host}: {str(port)} with {str(float(bitrate) / 1e6)} Mbps target, "
         f"({str(width)}, {str(height)}) resolution\n"
@@ -420,6 +434,8 @@ def send(
             rospy.logerr("Empty frame")
             break
         out_send.write(frame)
+        if out_write is not None:
+            out_write.write(frame)
 
     cap_send.release()
     out_send.release()

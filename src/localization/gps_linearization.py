@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
+
+import sys
 from typing import Optional, Tuple
 
 import numpy as np
+import numpy.typing as npt
 import rospy
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, Quaternion
 from mrover.msg import ImuAndMag
@@ -32,9 +35,9 @@ class GPSLinearization:
 
     # covariance config
     use_dop_covariance: bool
-    config_gps_covariance: np.ndarray
+    config_gps_covariance: npt.NDArray[np.float64]
 
-    def __init__(self):
+    def __init__(self) -> None:
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
         self.ref_lon = rospy.get_param("gps_linearization/reference_point_longitude")
@@ -50,7 +53,7 @@ class GPSLinearization:
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
-    def gps_callback(self, msg: NavSatFix):
+    def gps_callback(self, msg: NavSatFix) -> None:
         """
         Callback function that receives GPS messages, assigns their covariance matrix,
         and then publishes the linearized pose.
@@ -68,7 +71,7 @@ class GPSLinearization:
         if self.last_imu_msg is not None:
             self.publish_pose()
 
-    def imu_callback(self, msg: ImuAndMag):
+    def imu_callback(self, msg: ImuAndMag) -> None:
         """
         Callback function that receives IMU messages and publishes the linearized pose.
 
@@ -81,8 +84,8 @@ class GPSLinearization:
 
     @staticmethod
     def get_linearized_pose_in_world(
-        gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray
-    ) -> Tuple[SE3, np.ndarray]:
+        gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: npt.NDArray[np.float64]
+    ) -> Tuple[SE3, npt.NDArray[np.float64]]:
         """
         Linearizes the GPS geodetic coordinates into ENU cartesian coordinates,
         then combines them with the IMU orientation into a pose estimate relative
@@ -115,7 +118,7 @@ class GPSLinearization:
 
         return pose, covariance
 
-    def publish_pose(self):
+    def publish_pose(self) -> None:
         """
         Publishes the linearized pose of the rover relative to the map frame,
         as a PoseWithCovarianceStamped message.
@@ -136,12 +139,13 @@ class GPSLinearization:
         self.pose_publisher.publish(pose_msg)
 
 
-def main():
+def main() -> int:
     # start the node and spin to wait for messages to be received
     rospy.init_node("gps_linearization")
     GPSLinearization()
     rospy.spin()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

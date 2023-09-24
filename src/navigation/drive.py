@@ -17,9 +17,9 @@ default_constants = {
     "min_turning_effort": -1.0,
     "driving_p": 1.0,
 }
-ODOM_CONSTANTS = get_rosparam("drive/odom", default_constants)
-MAP_CONSTANTS = get_rosparam("drive/map", default_constants)
-LOOKAHEAD_DISTANCE = get_rosparam("drive/lookahead_distance", 3.0)
+ODOM_CONSTANTS = get_rosparam("drive/odom", default_constants)  # type: ignore
+MAP_CONSTANTS = get_rosparam("drive/map", default_constants)  # type: ignore
+LOOKAHEAD_DISTANCE = get_rosparam("drive/lookahead_distance", 3.0)  # type: ignore
 
 
 class DriveController:

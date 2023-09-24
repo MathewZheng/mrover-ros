@@ -1,9 +1,10 @@
+from typing import Any
 import rospy
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 
 
-def send_debug_arrow(self, rot):
+def send_debug_arrow(self, rot) -> None:
     # TODO: not working
     marker = Marker()
     marker.header.frame_id = "odom"
@@ -23,7 +24,7 @@ def send_debug_arrow(self, rot):
     self.context.vis_publisher.publish(marker)
 
 
-def get_rosparam(variable_name, default_value):
+def get_rosparam(variable_name, default_value) -> Any:
     try:
         return rospy.get_param(variable_name, default_value)
     except Exception as e:

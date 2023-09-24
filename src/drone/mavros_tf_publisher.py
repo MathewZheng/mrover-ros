@@ -3,6 +3,7 @@ import rospy
 from util.SE3 import SE3
 from geometry_msgs.msg import PoseStamped
 import tf2_ros
+import sys
 
 
 class MavrosTfPublisher:
@@ -11,7 +12,7 @@ class MavrosTfPublisher:
     and publishes it to the TF tree.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         rospy.Subscriber("/mavros/local_position/pose", PoseStamped, self.pose_callback)
 
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
@@ -19,7 +20,7 @@ class MavrosTfPublisher:
         self.world_frame = rospy.get_param("mavros_tf_publisher/world_frame")
         self.drone_frame = rospy.get_param("mavros_tf_publisher/drone_frame")
 
-    def pose_callback(self, msg: PoseStamped):
+    def pose_callback(self, msg: PoseStamped) -> None:
         """
         Callback function that receives the drone's pose from MAVROS and publishes it to the TF tree.
 
@@ -34,12 +35,13 @@ class MavrosTfPublisher:
         self.pose.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.drone_frame)
 
 
-def main():
+def main() -> int:
     # start the node and spin to wait for messages to be received
     rospy.init_node("tf_pose_publisher")
     MavrosTfPublisher()
     rospy.spin()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

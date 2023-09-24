@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Node for teleop-related callback functions
 
+import sys
 from typing import List
 import rospy as ros
 import subprocess
@@ -39,7 +40,7 @@ class TopicServices:
         return FetchMessageFromPackageResponse(messages)
 
 
-def main():
+def main() -> int:
     ros.init_node("topic_services")
     topics = TopicServices()
     ros.Service("topic_services/fetch_packages", FetchPackages, topics.fetch_packages_service)
@@ -47,7 +48,8 @@ def main():
         "topic_services/fetch_messages_from_package", FetchMessageFromPackage, topics.fetch_messages_for_package_service
     )
     ros.spin()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

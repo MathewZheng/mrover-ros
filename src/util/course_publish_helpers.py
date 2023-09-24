@@ -10,7 +10,7 @@ REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 
-def publish_waypoints(waypoints):
+def publish_waypoints(waypoints) -> None:
     rospy.wait_for_service("enable_auton")
     try:
         publish_enable = rospy.ServiceProxy("enable_auton", PublishEnableAuton)

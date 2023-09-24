@@ -6,6 +6,7 @@ from typing import ClassVar, Optional, List, Tuple
 import mrover.msg
 import mrover.srv
 import numpy as np
+import numpy.typing as npt
 import pymap3d
 import rospy
 import tf2_ros
@@ -64,10 +65,10 @@ class Rover:
                 self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame
             )
 
-    def send_drive_command(self, twist: Twist):
+    def send_drive_command(self, twist: Twist) -> None:
         self.ctx.vel_cmd_publisher.publish(twist)
 
-    def send_drive_stop(self):
+    def send_drive_stop(self) -> None:
         self.send_drive_command(Twist())
 
     def get_pose_with_time(self) -> Tuple[SE3, Time]:
@@ -109,7 +110,7 @@ class Environment:
             return None
         return fid_pose.position
 
-    def current_fid_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
+    def current_fid_pos(self, odom_override: bool = True) -> Optional[npt.NDArray[np.float64]]:
         """
         Retrieves the position of the current fiducial (and we are looking for it)
         :param: odom_override if false will force it to be in the map frame
@@ -123,7 +124,7 @@ class Environment:
 
         return self.get_fid_pos(current_waypoint.fiducial_id, in_odom)
 
-    def other_gate_fid_pos(self) -> Optional[np.ndarray]:
+    def other_gate_fid_pos(self) -> Optional[npt.NDArray[np.float64]]:
         """
         retrieves the position of the other gate post (which is 1 + current id) if we are looking for a gate
         """
@@ -161,7 +162,7 @@ class Course:
     # Currently active waypoint
     waypoint_index: int = 0
 
-    def increment_waypoint(self):
+    def increment_waypoint(self) -> None:
         self.waypoint_index += 1
 
     def waypoint_pose(self, wp_idx: int) -> SE3:
@@ -193,22 +194,22 @@ class Course:
         Returns whether the currently active waypoint (if it exists) indicates
         that we should go to a gate
         """
-        waypoint = self.current_waypoint()
-        if waypoint is not None:
-            return waypoint.type.val == mrover.msg.WaypointType.GATE
-        else:
-            return False
+        match self.current_waypoint():
+            case Waypoint() as waypoint:  # type: ignore
+                waypoint.type.val == mrover.msg.WaypointType.GATE
+            case _:
+                return False
 
     def look_for_post(self) -> bool:
         """
         Returns whether the currently active waypoint (if it exists) indicates
         that we should go to a post
         """
-        waypoint = self.current_waypoint()
-        if waypoint is not None:
-            return waypoint.type.val == mrover.msg.WaypointType.POST
-        else:
-            return False
+        match self.current_waypoint():
+            case Waypoint() as waypoint:  # type: ignore
+                waypoint.type.val == mrover.msg.WaypointType.POST
+            case _:
+                return False
 
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
@@ -241,7 +242,7 @@ def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Waypoint:
     return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
 
 
-def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
+def convert_cartesian_to_gps(coordinate: npt.NDArray[np.float64]) -> GPSWaypoint:
     """
     Converts a coordinate to a GPSWaypoint (used for sending data back to basestation)
     """
@@ -279,7 +280,7 @@ class Context:
     odom_frame: str
     rover_frame: str
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
@@ -306,5 +307,5 @@ class Context:
             self.disable_requested = True
         return mrover.srv.PublishEnableAutonResponse(True)
 
-    def stuck_callback(self, msg: Bool):
+    def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data

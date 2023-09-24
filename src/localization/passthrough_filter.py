@@ -5,6 +5,7 @@ from util.np_utils import numpify
 from geometry_msgs.msg import PoseWithCovarianceStamped
 import tf2_ros
 import numpy as np
+import sys
 
 
 class PassthroughFilter:
@@ -25,7 +26,7 @@ class PassthroughFilter:
     odom_frame: str
     rover_frame: str
 
-    def __init__(self):
+    def __init__(self) -> None:
         # read required parameters, if they don't exist an error will be thrown
         self.use_odom = rospy.get_param("use_odom_frame")
         self.world_frame = rospy.get_param("world_frame")
@@ -37,7 +38,7 @@ class PassthroughFilter:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         rospy.Subscriber("linearized_pose", PoseWithCovarianceStamped, self.pose_callback)
 
-    def pose_callback(self, msg: PoseWithCovarianceStamped):
+    def pose_callback(self, msg: PoseWithCovarianceStamped) -> None:
         """
         Publishes the pose of the rover relative to the map frame to the TF tree.
         The pose will be published either as a direct map->base_link transform,
@@ -76,12 +77,13 @@ class PassthroughFilter:
         pose_out.publish_to_tf_tree(self.tf_broadcaster, self.world_frame, child_frame)
 
 
-def main():
+def main() -> int:
     # start the node and spin to wait for messages to be received
     rospy.init_node("gps_linearization")
     PassthroughFilter()
     rospy.spin()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

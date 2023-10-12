@@ -240,7 +240,7 @@ else ()
         add_cpp_library_macro(lie src/util/lie/*.cpp src/util/lie)
 
         add_cpp_interface_library_macro(moteus deps/moteus/lib/cpp/mjbots)
-        
+
         add_gazebo_plugin_macro(differential_drive_plugin_6w src/simulator/differential_drive_6w.cpp src)
 
         add_gazebo_plugin_macro(kinect_plugin src/simulator/gazebo_ros_openni_kinect.cpp src/simulator)
@@ -257,6 +257,15 @@ else ()
             target_compile_definitions(zed_nodelet PRIVATE
                     MROVER_IS_NODELET # Generate code relevant to nodelet
                     ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
+                    __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
+            )
+
+            add_cpp_nodelet_macro(cuda_tag_detector_nodelet src/perception/cuda_tag_detector/*.c* src/perception/cuda_tag_detector)
+            target_precompile_headers(cuda_tag_detector_nodelet PRIVATE src/perception/cuda_tag_detector/pch.hpp)
+            target_include_directories(cuda_tag_detector_nodelet SYSTEM PRIVATE ${CUDA_INCLUDE_DIRS})
+            target_link_libraries(cuda_tag_detector_nodelet PRIVATE opencv_core opencv_cudaimgproc lie)
+            target_compile_definitions(cuda_tag_detector_nodelet PRIVATE
+                    MROVER_IS_NODELET # Generate code relevant to nodelet
                     __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
             )
         endif ()

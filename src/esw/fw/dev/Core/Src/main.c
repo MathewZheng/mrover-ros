@@ -31,6 +31,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define NUM_CHANNELS 10
+#define NUM_CURRENT_SENSORS 5
+#define NUM_TEMP_SENSORS 5
 
 /* USER CODE END PD */
 
@@ -71,6 +74,11 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
     }
   }
 }
+
+ADCSensor* adc;
+DiagCurrentSensor* current_sensors[NUM_CURRENT_SENSORS];
+DiagTempSensor* temp_sensors[NUM_TEMP_SENSORS];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -139,6 +147,23 @@ int main(void)
     TxHeader.FDFormat = FDCAN_FD_CAN;
     TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
     TxHeader.MessageMarker = 0;
+
+
+    // 10 channels: 5 for current, 5 for temperature
+      // Channels 0-4: CURR 0-4
+      // Channels 5-9: TEMP 0-4
+
+      adc = new_adc_sensor(&hadc1, NUM_CHANNELS);
+
+      // Create current sensor objects (test_ADC channels 0-4)
+      for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
+    	  current_sensors[i] = new_diag_current_sensor(adc, i);
+      }
+
+      // Create temp sensor objects (test_ADC channels 5-9)
+      for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
+    	  temp_sensors[i] = new_diag_temp_sensor(adc, i + 5);
+      }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -148,65 +173,19 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	for (int i=0; i<12; i++) {
-	  TxData[i] = indx++;
-	}
+	  // Update ADC values every loop
+	  update_adc_sensor_values(adc);
 
-	if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK)
-	{
-		Error_Handler();
-	}
+	  // TODO: Maybe we can make this into interrupts, update every interval of X
+	  // Rather than doing polling like this (but this is okay for testing)
+	  for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
+		  update_diag_current_sensor_val(current_sensors[i]);
+		  get_diag_current_sensor_val(current_sensors[i]);
+	  }
 
-		HAL_Delay (1000);
-	  for (uint16_t i = 0; i < 2; ++i) {
-		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_0, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_1, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_4, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_11, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, i);
-		  HAL_Delay(20);
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, i);
-		  HAL_Delay(20);
+	  for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
+		  update_diag_temp_sensor_val(temp_sensors[i]);
+		  get_diag_temp_sensor_val(temp_sensors[i]);
 	  }
   }
   /* USER CODE END 3 */

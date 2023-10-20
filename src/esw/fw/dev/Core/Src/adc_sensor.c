@@ -26,7 +26,7 @@ uint16_t get_adc_sensor_value(ADCSensor *adc_sensor, uint8_t channel) {
 // EFFECTS: Updates the stored value of value.
 void update_adc_sensor_values(ADCSensor *adc_sensor) {
 	for (int i = 0; i < adc_sensor->total_channels; ++i) {
-		HAL_ADC_Start_DMA(adc_sensor->adc, adc_sensor->values, adc_sensor->values[i]);
-//		HAL_ADC_Stop_DMA(adc_sensor->adc);
+//		HAL_ADC_Start_DMA(adc_sensor->adc, adc_sensor->values, adc_sensor->values[i]);
+		HAL_ADC_Start_DMA(adc_sensor->adc, adc_sensor->values, adc_sensor->total_channels);
 	}
 }

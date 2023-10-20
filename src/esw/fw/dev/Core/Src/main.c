@@ -22,6 +22,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "diag_curr_sensor.h"
+#include "diag_temp_sensor.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -31,9 +34,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define NUM_CHANNELS 10
-#define NUM_CURRENT_SENSORS 5
-#define NUM_TEMP_SENSORS 5
+#define NUM_CHANNELS 8
+#define NUM_CURRENT_SENSORS 4
+#define NUM_TEMP_SENSORS 4
 
 /* USER CODE END PD */
 
@@ -44,6 +47,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
 
 FDCAN_HandleTypeDef hfdcan1;
 
@@ -56,6 +60,7 @@ FDCAN_RxHeaderTypeDef RxHeader;
 uint8_t TxData[12];
 uint8_t RxData[12];
 uint8_t indx = 0;
+
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 {
@@ -78,12 +83,15 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 ADCSensor* adc;
 DiagCurrentSensor* current_sensors[NUM_CURRENT_SENSORS];
 DiagTempSensor* temp_sensors[NUM_TEMP_SENSORS];
+float currents[NUM_CURRENT_SENSORS];
+float temps[NUM_TEMP_SENSORS];
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_I2C1_Init(void);
@@ -125,6 +133,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ADC1_Init();
   MX_FDCAN1_Init();
   MX_I2C1_Init();
@@ -149,20 +158,20 @@ int main(void)
     TxHeader.MessageMarker = 0;
 
 
-    // 10 channels: 5 for current, 5 for temperature
-      // Channels 0-4: CURR 0-4
-      // Channels 5-9: TEMP 0-4
+    // 8 channels: 4 for current, 4 for temperature
+      // Channels 0-3: CURR 1-4
+      // Channels 4-7: TEMP 1-4
 
       adc = new_adc_sensor(&hadc1, NUM_CHANNELS);
 
-      // Create current sensor objects (test_ADC channels 0-4)
+      // Create current sensor objects (test_ADC channels 0-3)
       for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
     	  current_sensors[i] = new_diag_current_sensor(adc, i);
       }
 
-      // Create temp sensor objects (test_ADC channels 5-9)
+      // Create temp sensor objects (test_ADC channels 4-7)
       for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
-    	  temp_sensors[i] = new_diag_temp_sensor(adc, i + 5);
+    	  temp_sensors[i] = new_diag_temp_sensor(adc, i + NUM_CURRENT_SENSORS);
       }
   /* USER CODE END 2 */
 
@@ -180,12 +189,12 @@ int main(void)
 	  // Rather than doing polling like this (but this is okay for testing)
 	  for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
 		  update_diag_current_sensor_val(current_sensors[i]);
-		  get_diag_current_sensor_val(current_sensors[i]);
+		  currents[i] = get_diag_current_sensor_val(current_sensors[i]);
 	  }
 
 	  for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
 		  update_diag_temp_sensor_val(temp_sensors[i]);
-		  get_diag_temp_sensor_val(temp_sensors[i]);
+		  temps[i] = get_diag_temp_sensor_val(temp_sensors[i]);
 	  }
   }
   /* USER CODE END 3 */
@@ -257,15 +266,15 @@ static void MX_ADC1_Init(void)
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.GainCompensation = 0;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.NbrOfConversion = 8;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
   hadc1.Init.OversamplingMode = DISABLE;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -289,6 +298,69 @@ static void MX_ADC1_Init(void)
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = ADC_REGULAR_RANK_2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_3;
+  sConfig.Rank = ADC_REGULAR_RANK_3;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_4;
+  sConfig.Rank = ADC_REGULAR_RANK_4;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_11;
+  sConfig.Rank = ADC_REGULAR_RANK_5;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_12;
+  sConfig.Rank = ADC_REGULAR_RANK_6;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_14;
+  sConfig.Rank = ADC_REGULAR_RANK_7;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_15;
+  sConfig.Rank = ADC_REGULAR_RANK_8;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -435,6 +507,23 @@ static void MX_I2C2_Init(void)
   /* USER CODE BEGIN I2C2_Init 2 */
 
   /* USER CODE END I2C2_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMAMUX1_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
 }
 

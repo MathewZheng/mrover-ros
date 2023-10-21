@@ -12,7 +12,7 @@
 typedef struct {
 	ADC_HandleTypeDef *adc;
 	uint8_t total_channels;
-	volatile uint16_t values[8];
+	uint16_t values[8];
 } ADCSensor;
 
 // REQUIRES: hadc is the adc and _total_channels are the total channels.

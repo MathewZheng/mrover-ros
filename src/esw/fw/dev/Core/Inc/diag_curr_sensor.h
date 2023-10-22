@@ -10,7 +10,6 @@
 
 #define DIAG_CURR_VCC 3.3f
 #define DIAG_CURR_V_PER_AMP 0.4f
-
 // Part Link
 // https://www.digikey.com/en/products/detail/texas-instruments/TMCS1108A4BQDR/13692775
 // Sensitivity: 400 mV/A

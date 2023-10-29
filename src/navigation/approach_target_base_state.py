@@ -19,6 +19,9 @@ class ApproachTargetBaseState(State):
     def __init__(self) -> None:
         super().__init__()
         self.object_type = None
+        self.target_pos = None
+        self.cmd = None
+        self.arrived = None
 
     @abstractmethod
     def get_target_pos():
@@ -36,15 +39,12 @@ class ApproachTargetBaseState(State):
 
     def on_loop(self, context):
         target_pos = self.get_target_pos()
-        cmd = context.rover.get_drive_command(target_pos, context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
+        self.cmd, self.arrived = context.rover.get_drive_command(
+            target_pos, context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH
+        )
         self.determine_next()
         object_sub = rospy.Subscriber("object_type", str, self.obj_type_callback)
-
-        # check object type, return state to go to
-        if self.object_type == "post":
-            return
-        # TODO: set next object state
-        return object_sub  # return next object state
+        return self
 
     def obj_type_callback(self, data):
         self.object_type = data

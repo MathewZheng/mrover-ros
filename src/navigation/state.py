@@ -44,6 +44,17 @@ class OffState(State):
         return self
 
 
+class ApproachTargetBaseState(State):
+    def on_loop(self, context):
+        # check if we have a target
+        if context.course:
+            return waypoint.WaypointState()
+
+        cmd_vel = Twist()
+        context.rover.send_drive_command(cmd_vel)
+        return self
+
+
 def off_check(context) -> bool:
     """
     function that state machine will call to check if the rover is turned off.

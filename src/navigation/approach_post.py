@@ -44,7 +44,7 @@ class ApproachPostState(State):
                 context.env.last_post_location = context.env.current_fid_pos(odom_override=False)
                 context.course.increment_waypoint()
                 return waypoint.WaypointState()
-            context.rover.send_drive_command(cmd_vel)
+                context.rover.send_drive_command(cmd_vel)
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,

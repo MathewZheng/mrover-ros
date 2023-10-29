@@ -42,13 +42,9 @@ class ApproachTargetBaseState(State):
 
         # check object type, return state to go to
         if self.object_type == "post":
-            return 
+            return
         # TODO: set next object state
         return object_sub  # return next object state
 
     def obj_type_callback(self, data):
         self.object_type = data
-
-
-
-

@@ -221,6 +221,7 @@ endif ()
 ## Teleoperation
 
 mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
+mrover_add_node(arm_planner src/teleoperation/arm_planner/*.cpp)
 
 ## Simulator
 

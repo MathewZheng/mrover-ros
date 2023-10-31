@@ -12,7 +12,7 @@ namespace mrover {
 
     // Subscribers
 
-    [[maybe_unused]] ros::Subscriber ik_subscriber;
+    [[maybe_unused]] ros::Subscriber positionSubscriber;
 
     // Publishers
 
@@ -30,7 +30,7 @@ namespace mrover {
         double frequency{};
         nh.param<double>("/frequency", frequency, 100.0);
 
-        ik_subscriber = nh.subscribe("arm_ik", 1, ik_callback);
+        positionSubscriber = nh.subscribe("arm_ik", 1, ik_callback);
         position_publisher = nh.advertise<Position>("arm_position_cmd", 1);
 
         positions.names = {"base_link_joint", "a_joint", "b_joint", "c_joint", "d_joint"};

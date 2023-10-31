@@ -31,6 +31,7 @@ namespace mrover {
         publishThresholdTags();
 
         //PUBLISH TAGS
+        publishTagsOnImage();
     }
 
     //HELPER FUNCTIONS
@@ -152,8 +153,11 @@ namespace mrover {
 
     float LongRangeTagDetectorNodelet::getTagBearing(std::vector<cv::Point2f>& tagCorners) const {
         //TODO: Implement me!
+        const float fov = degreesToRadians(85);
+        float b = (getTagCenterOffsetPixels(tagCorners)/mImgMsg.width) * fov ;
+        
+        return b;
 
-        return {};
     }
 
     void LongRangeTagDetectorNodelet::publishThresholdTags() {

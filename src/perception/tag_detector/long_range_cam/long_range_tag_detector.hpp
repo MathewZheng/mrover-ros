@@ -8,6 +8,7 @@ namespace mrover {
         int id = -1;
         int hitCount = 0;
         cv::Point2f imageCenter{};
+        float bearing;
     };
 
     class LongRangeTagDetectorNodelet : public nodelet::Nodelet {

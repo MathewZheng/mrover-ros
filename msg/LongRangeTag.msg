@@ -5,3 +5,4 @@
 uint8 id
 float32 xOffset
 float32 yOffset
+float32 bearing

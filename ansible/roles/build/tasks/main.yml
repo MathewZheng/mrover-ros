@@ -166,5 +166,5 @@
     name:
       # Installs from pyproject.toml
       - "{{ catkin_workspace }}/src/mrover[dev]"
-    virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
-    virtualenv_command: python3.10 -m venv
+    virtualenv: "{{ catkin_workspace }}/src/mrover/venv312"
+    virtualenv_command: python3.12 -m venv venv312

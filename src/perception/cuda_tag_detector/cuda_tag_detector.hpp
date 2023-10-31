@@ -6,7 +6,11 @@ namespace mrover {
     private:
         ros::NodeHandle mNh, mPnh;
 
+        ros::Subscriber mImageSub;
+
         void onInit() override;
+
+        void imageCallback(const sensor_msgs::ImageConstPtr& imageMessage);
 
     public:
         CudaTagDetectorNodelet() = default;

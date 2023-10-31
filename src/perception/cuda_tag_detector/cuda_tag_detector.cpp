@@ -5,6 +5,14 @@ namespace mrover {
     void CudaTagDetectorNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
+
+        mImageSub = mPnh.subscribe<sensor_msgs::Image>("image", 1, &CudaTagDetectorNodelet::imageCallback, this);
+    }
+
+    void CudaTagDetectorNodelet::imageCallback(const sensor_msgs::ImageConstPtr& imageMessage) {
+        // TODO: Upload this memory to the GPU
+        // TODO: Run canny edge detection on the GPU OR adaptive thresholding
+        // TODO: Do the rest of the paper stuff yk
     }
 
 } // namespace mrover
@@ -21,5 +29,7 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
+#if MROVER_IS_NODELET
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(mrover::CudaTagDetectorNodelet, nodelet::Nodelet)
+#endif
